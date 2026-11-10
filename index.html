@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>繪本</title>
+<style>
+  :root {
+    --bg: #f3efe6;
+    --ink: #2b2a33;
+    --accent: #3d5a80;
+    --overlay: rgba(43, 42, 51, .88);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #1d1c22; --ink: #f1ede4; --accent: #8fb3de; }
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    background: var(--bg); color: var(--ink);
+    font-family: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
+    display: flex; flex-direction: column; overflow: hidden;
+    padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom);
+    touch-action: pan-y;
+  }
+  #stage {
+    flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center;
+    padding: 8px;
+  }
+  #page { max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 6px; }
+
+  #bar {
+    display: flex; align-items: center; justify-content: center; gap: clamp(12px, 4vw, 40px);
+    padding: 8px 12px 14px;
+  }
+  .btn {
+    border: 0; padding: 0; background: none; cursor: pointer;
+    width: clamp(52px, 12vw, 84px); height: clamp(52px, 12vw, 84px);
+    border-radius: 50%; overflow: hidden; flex: none;
+  }
+  .btn img { width: 100%; height: 100%; object-fit: contain; display: block; }
+  .btn:focus-visible, #startBtn:focus-visible, .chip:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+  .btn[disabled] { opacity: .3; cursor: default; }
+  .btn.fallback { background: var(--accent); color: #fff; font-size: 1.6rem; }
+  #read.playing { box-shadow: 0 0 0 4px var(--accent); }
+
+  #meta { text-align: center; font-size: .95rem; padding-bottom: 6px; }
+  #tools { display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; padding-bottom: 10px; }
+  .chip {
+    font: inherit; font-size: .9rem; padding: .35em .9em; cursor: pointer;
+    border: 1.5px solid var(--accent); color: var(--ink); background: transparent; border-radius: 999px;
+  }
+  .chip[aria-pressed="true"] { background: var(--accent); color: #fff; }
+
+  #spirit {
+    position: fixed; right: 10px; bottom: calc(10px + env(safe-area-inset-bottom));
+    width: clamp(48px, 10vw, 80px); pointer-events: none; opacity: .95;
+  }
+
+  #start {
+    position: fixed; inset: 0; background: var(--overlay);
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px;
+    color: #fff; z-index: 10;
+  }
+  #start img { width: min(55vw, 320px); border-radius: 8px; }
+  #start h1 { margin: 0; font-size: clamp(1.5rem, 5vw, 2.2rem); }
+  #startBtn {
+    font: inherit; font-size: 1.2rem; padding: .7em 2em; border: 0; border-radius: 999px;
+    background: #fff; color: #2b2a33; cursor: pointer;
+  }
+  .hidden { display: none !important; }
+  #err { color: #c0392b; text-align: center; font-size: .85rem; min-height: 1.2em; }
+</style>
+</head>
+<body>
+
+<div id="stage"><img id="page" alt=""></div>
+<div id="meta"><span id="num"></span></div>
+<div id="err" role="status"></div>
+<div id="bar">
+  <button class="btn" id="prev" aria-label="上一頁"><img src="assets/graphics/left.jpg" alt=""></button>
+  <button class="btn" id="read" aria-label="朗讀"><img src="assets/graphics/read.jpg" alt=""></button>
+  <button class="btn" id="next" aria-label="下一頁"><img src="assets/graphics/right.jpg" alt=""></button>
+</div>
+<div id="tools">
+  <button class="chip" id="autoChip" aria-pressed="true">朗讀完自動翻頁</button>
+  <button class="chip" id="musicChip" aria-pressed="true">頁面音樂</button>
+  <button class="chip" id="bgmChip" aria-pressed="false">伴奏</button>
+</div>
+<img id="spirit" src="assets/graphics/spirit.jpg" alt="" onerror="this.remove()">
+
+<div id="start">
+  <img src="assets/graphics/0.jpg" alt="">
+  <h1>繪本</h1>
+  <button id="startBtn">開始閱讀</button>
+</div>
+
+<audio id="speech" preload="auto"></audio>
+<audio id="music" preload="auto" loop></audio>
+<audio id="bgm" preload="none" loop></audio>
+
+<script>
+/* ===== 設定區：依需要修改 ===== */
+const FIRST = 0;                 // 第一頁編號
+const LAST = 19;                 // 最後一頁編號
+const BGM_FILE = "assets/music/" + encodeURIComponent("伴奏.mp3.mp3");
+const MUSIC_VOLUME = 0.25;       // 頁面音樂音量（朗讀時調小，才聽得到朗讀）
+const BGM_VOLUME = 0.2;          // 伴奏音量
+/* ============================== */
+
+const $ = id => document.getElementById(id);
+const img = $("page"), speech = $("speech"), music = $("music"), bgm = $("bgm");
+const state = { i: FIRST, auto: true, music: true, bgm: false, started: false };
+
+music.volume = MUSIC_VOLUME;
+bgm.volume = BGM_VOLUME;
+bgm.src = BGM_FILE;
+
+function setErr(msg) { $("err").textContent = msg || ""; }
+
+function show(n, play) {
+  state.i = Math.min(Math.max(n, FIRST), LAST);
+  const i = state.i;
+  setErr("");
+  img.src = `assets/graphics/${i}.jpg`;
+  img.alt = `第 ${i - FIRST + 1} 頁`;
+  $("num").textContent = `${i - FIRST + 1} / ${LAST - FIRST + 1}`;
+  $("prev").disabled = i === FIRST;
+  $("next").disabled = i === LAST;
+
+  speech.pause(); speech.src = `assets/speech/speech${i}.mp3`;
+  music.pause();  music.src  = `assets/music/music${i}.mp3`;
+  $("read").classList.remove("playing");
+
+  // 預載下一頁
+  if (i < LAST) { new Image().src = `assets/graphics/${i + 1}.jpg`; }
+
+  if (play) playPage();
+}
+
+function playPage() {
+  speech.currentTime = 0;
+  speech.play().then(() => $("read").classList.add("playing"))
+    .catch(() => setErr("無法播放朗讀，請檢查 assets/speech/ 裡的檔案"));
+  if (state.music) music.play().catch(() => {});
+}
+
+function stopPage() {
+  speech.pause(); music.pause();
+  $("read").classList.remove("playing");
+}
+
+speech.addEventListener("ended", () => {
+  $("read").classList.remove("playing");
+  if (state.auto && state.i < LAST) {
+    setTimeout(() => show(state.i + 1, true), 600);
+  } else {
+    music.pause();
+  }
+});
+speech.addEventListener("error", () => setErr(`找不到 speech${state.i}.mp3`));
+img.addEventListener("error", () => setErr(`找不到 ${state.i}.jpg`));
+
+$("prev").onclick = () => show(state.i - 1, !speech.paused);
+$("next").onclick = () => show(state.i + 1, !speech.paused);
+$("read").onclick = () => speech.paused ? playPage() : stopPage();
+
+$("autoChip").onclick = e => {
+  state.auto = !state.auto; e.currentTarget.setAttribute("aria-pressed", state.auto);
+};
+$("musicChip").onclick = e => {
+  state.music = !state.music; e.currentTarget.setAttribute("aria-pressed", state.music);
+  if (!state.music) music.pause(); else if (!speech.paused) music.play().catch(() => {});
+};
+$("bgmChip").onclick = e => {
+  state.bgm = !state.bgm; e.currentTarget.setAttribute("aria-pressed", state.bgm);
+  if (state.bgm) bgm.play().catch(() => setErr("找不到伴奏檔案")); else bgm.pause();
+};
+
+$("startBtn").onclick = () => {
+  $("start").classList.add("hidden");
+  state.started = true;
+  show(FIRST, true);
+};
+
+// 鍵盤
+document.addEventListener("keydown", e => {
+  if (!state.started) return;
+  if (e.key === "ArrowLeft") show(state.i - 1, !speech.paused);
+  if (e.key === "ArrowRight") show(state.i + 1, !speech.paused);
+  if (e.key === " ") { e.preventDefault(); $("read").click(); }
+});
+
+// 手機左右滑動
+let sx = null;
+document.addEventListener("touchstart", e => { sx = e.touches[0].clientX; }, { passive: true });
+document.addEventListener("touchend", e => {
+  if (sx === null || !state.started) return;
+  const dx = e.changedTouches[0].clientX - sx; sx = null;
+  if (Math.abs(dx) > 60) show(state.i + (dx < 0 ? 1 : -1), !speech.paused);
+});
+
+show(FIRST, false);
+</script>
+</body>
+</html>
