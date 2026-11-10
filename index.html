@@ -5,89 +5,72 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>繪本</title>
 <style>
-  :root {
-    --bg: #f3efe6;
-    --ink: #2b2a33;
-    --accent: #3d5a80;
-    --overlay: rgba(43, 42, 51, .88);
-  }
-  @media (prefers-color-scheme: dark) {
-    :root { --bg: #1d1c22; --ink: #f1ede4; --accent: #8fb3de; }
-  }
-  * { box-sizing: border-box; }
-  html, body { height: 100%; margin: 0; }
-  body {
-    background: var(--bg); color: var(--ink);
-    font-family: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
-    display: flex; flex-direction: column; overflow: hidden;
-    padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom);
-    touch-action: pan-y;
-  }
-  #stage {
-    flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center;
-    padding: 8px;
-  }
-  #page { max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 6px; }
-
-  #bar {
-    display: flex; align-items: center; justify-content: center; gap: clamp(12px, 4vw, 40px);
-    padding: 8px 12px 14px;
-  }
-  .btn {
-    border: 0; padding: 0; background: none; cursor: pointer;
-    width: clamp(52px, 12vw, 84px); height: clamp(52px, 12vw, 84px);
-    border-radius: 50%; overflow: hidden; flex: none;
-  }
-  .btn img { width: 100%; height: 100%; object-fit: contain; display: block; }
-  .btn:focus-visible, #startBtn:focus-visible, .chip:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
-  .btn[disabled] { opacity: .3; cursor: default; }
-  .btn.fallback { background: var(--accent); color: #fff; font-size: 1.6rem; }
-  #read.playing { box-shadow: 0 0 0 4px var(--accent); }
-
-  #meta { text-align: center; font-size: .95rem; padding-bottom: 6px; }
-  #tools { display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; padding-bottom: 10px; }
-  .chip {
-    font: inherit; font-size: .9rem; padding: .35em .9em; cursor: pointer;
-    border: 1.5px solid var(--accent); color: var(--ink); background: transparent; border-radius: 999px;
-  }
-  .chip[aria-pressed="true"] { background: var(--accent); color: #fff; }
-
-  #spirit {
-    position: fixed; right: 10px; bottom: calc(10px + env(safe-area-inset-bottom));
-    width: clamp(48px, 10vw, 80px); pointer-events: none; opacity: .95;
-  }
-
-  #start {
-    position: fixed; inset: 0; background: var(--overlay);
-    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px;
-    color: #fff; z-index: 10;
-  }
-  #start img { width: min(55vw, 320px); border-radius: 8px; }
-  #start h1 { margin: 0; font-size: clamp(1.5rem, 5vw, 2.2rem); }
-  #startBtn {
-    font: inherit; font-size: 1.2rem; padding: .7em 2em; border: 0; border-radius: 999px;
-    background: #fff; color: #2b2a33; cursor: pointer;
-  }
-  .hidden { display: none !important; }
-  #err { color: #c0392b; text-align: center; font-size: .85rem; min-height: 1.2em; }
+  :root { --bg:#f3efe6; --ink:#2b2a33; --accent:#3d5a80; --err:#b3261e; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#1d1c22; --ink:#f1ede4; --accent:#8fb3de; --err:#ff9a90; } }
+  * { box-sizing:border-box; }
+  [hidden] { display:none !important; }
+  html, body { height:100%; margin:0; }
+  body { background:var(--bg); color:var(--ink); display:flex; flex-direction:column; overflow:hidden;
+    font-family:"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif;
+    padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom); touch-action:pan-y; }
+  #stage { flex:1; min-height:0; display:flex; align-items:center; justify-content:center; padding:8px; }
+  #page { max-width:100%; max-height:100%; object-fit:contain; border-radius:6px; }
+  #meta { text-align:center; font-size:.95rem; padding-bottom:4px; }
+  #errBox { display:flex; align-items:center; justify-content:center; gap:10px; flex-wrap:wrap; padding:2px 12px; color:var(--err); font-size:.9rem; }
+  #bar { display:flex; align-items:center; justify-content:center; gap:clamp(12px,4vw,40px); padding:6px 12px 10px; }
+  .btn { border:0; padding:0; background:none; cursor:pointer; flex:none; border-radius:50%; overflow:hidden;
+    width:clamp(52px,12vw,84px); height:clamp(52px,12vw,84px); }
+  .btn img { width:100%; height:100%; object-fit:contain; display:block; }
+  .btn.fallback { background:var(--accent); color:#fff; font:inherit; font-size:1rem; }
+  .btn[disabled] { opacity:.3; cursor:default; }
+  #read[aria-pressed="true"] { box-shadow:0 0 0 4px var(--accent); }
+  #tools { display:flex; justify-content:center; gap:8px; flex-wrap:wrap; padding:0 8px 10px; }
+  .chip { font:inherit; font-size:.9rem; padding:.35em .9em; cursor:pointer; text-decoration:none; display:inline-block;
+    border:1.5px solid var(--accent); color:var(--ink); background:transparent; border-radius:999px; }
+  .chip[aria-pressed="true"] { background:var(--accent); color:#fff; }
+  .btn:focus-visible, .chip:focus-visible, #startBtn:focus-visible { outline:3px solid var(--accent); outline-offset:3px; }
+  #spirit { position:fixed; right:10px; bottom:calc(10px + env(safe-area-inset-bottom)); width:clamp(48px,10vw,80px); pointer-events:none; }
+  #loading { position:fixed; top:calc(10px + env(safe-area-inset-top)); left:50%; transform:translateX(-50%); z-index:30;
+    background:var(--ink); color:var(--bg); padding:.3em 1em; border-radius:999px; font-size:.9rem; }
+  #start { position:fixed; inset:0; z-index:10; background:rgba(43,42,51,.88); color:#fff;
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:18px; }
+  #start img { width:min(55vw,320px); border-radius:8px; }
+  #start h1 { margin:0; font-size:clamp(1.5rem,5vw,2.2rem); }
+  #startBtn { font:inherit; font-size:1.2rem; padding:.7em 2em; border:0; border-radius:999px; background:#fff; color:#2b2a33; cursor:pointer; }
+  #debug { position:fixed; z-index:20; left:8px; top:48px; width:min(94vw,440px); max-height:60vh; overflow:auto;
+    background:var(--bg); color:var(--ink); border:1.5px solid var(--accent); border-radius:8px; padding:10px; font-size:.8rem; }
+  #debug pre { margin:0 0 8px; white-space:pre-wrap; font-family:inherit; }
+  #debug .chip { font-size:.8rem; margin:0 4px 4px 0; }
 </style>
 </head>
 <body>
 
+<div id="loading" role="status" hidden>載入中…</div>
 <div id="stage"><img id="page" alt=""></div>
 <div id="meta"><span id="num"></span></div>
-<div id="err" role="status"></div>
+<div id="errBox" role="alert" hidden><span id="errText"></span><button class="chip" id="retry">重試</button></div>
+
 <div id="bar">
-  <button class="btn" id="prev" aria-label="上一頁"><img src="assets/graphics/left.jpg" alt=""></button>
-  <button class="btn" id="read" aria-label="朗讀"><img src="assets/graphics/read.jpg" alt=""></button>
-  <button class="btn" id="next" aria-label="下一頁"><img src="assets/graphics/right.jpg" alt=""></button>
+  <button class="btn" id="prev" aria-label="上一頁" data-fallback="◀"><img src="assets/graphics/left.jpg" alt=""></button>
+  <button class="btn" id="read" aria-label="朗讀" aria-pressed="false" data-fallback="朗讀"><img src="assets/graphics/read.jpg" alt=""></button>
+  <button class="btn" id="next" aria-label="下一頁" data-fallback="▶"><img src="assets/graphics/right.jpg" alt=""></button>
 </div>
 <div id="tools">
-  <button class="chip" id="autoChip" aria-pressed="true">朗讀完自動翻頁</button>
-  <button class="chip" id="musicChip" aria-pressed="true">頁面音樂</button>
+  <button class="chip" id="autoChip" aria-pressed="false">自動翻頁</button>
+  <button class="chip" id="musicChip" aria-pressed="true">背景音樂</button>
   <button class="chip" id="bgmChip" aria-pressed="false">伴奏</button>
+  <button class="chip" id="mute">靜音</button>
+  <button class="chip" id="debugBtn" aria-expanded="false" aria-controls="debug">除錯</button>
+  <a class="chip" id="portfolio" href="#" hidden>回作品集</a>
 </div>
-<img id="spirit" src="assets/graphics/spirit.jpg" alt="" onerror="this.remove()">
+<img id="spirit" alt="" hidden>
+
+<div id="debug" hidden>
+  <pre id="debugOut"></pre>
+  <button class="chip" id="dbgEnd">語音跳到結尾前 1 秒</button>
+  <button class="chip" id="dbgFail">模擬語音檔失敗</button>
+  <button class="chip" id="dbgClose">關閉除錯</button>
+</div>
 
 <div id="start">
   <img src="assets/graphics/0.jpg" alt="">
@@ -100,107 +83,243 @@
 <audio id="bgm" preload="none" loop></audio>
 
 <script>
-/* ===== 設定區：依需要修改 ===== */
-const FIRST = 0;                 // 第一頁編號
-const LAST = 19;                 // 最後一頁編號
+/* ===== 設定區 ===== */
+const FIRST = 0, LAST = 19;
+const MUSIC_VOLUME = 0.5;      // 背景音樂正常音量
+const DUCK_VOLUME = 0.12;      // 朗讀時背景音樂音量
+const BGM_VOLUME = 0.2, BGM_DUCK = 0.06;
+const AUTO_ADVANCE_DEFAULT = false;   // true：朗讀完自動翻頁
 const BGM_FILE = "assets/music/" + encodeURIComponent("伴奏.mp3.mp3");
-const MUSIC_VOLUME = 0.25;       // 頁面音樂音量（朗讀時調小，才聽得到朗讀）
-const BGM_VOLUME = 0.2;          // 伴奏音量
-/* ============================== */
+const SPIRIT_FILE = "assets/graphics/spirit.png";  // 不要小精靈就改成 ""
+const PORTFOLIO_URL = "";      // 作品集網址，空白則不顯示「回作品集」
+/* ================== */
 
 const $ = id => document.getElementById(id);
 const img = $("page"), speech = $("speech"), music = $("music"), bgm = $("bgm");
-const state = { i: FIRST, auto: true, music: true, bgm: false, started: false };
+const state = { i: FIRST, started: false, auto: AUTO_ADVANCE_DEFAULT, music: true, bgm: false, muted: false, wantRead: false, nonce: 0 };
+const TOTAL = LAST - FIRST + 1;
+let advanceTimer = null;
 
-music.volume = MUSIC_VOLUME;
-bgm.volume = BGM_VOLUME;
-bgm.src = BGM_FILE;
+const url = (kind, n, bust) => {
+  const base = kind === "img" ? `assets/graphics/${n}.jpg` : kind === "speech" ? `assets/speech/speech${n}.mp3` : `assets/music/music${n}.mp3`;
+  return bust ? `${base}?r=${state.nonce}` : base;
+};
 
-function setErr(msg) { $("err").textContent = msg || ""; }
+/* 除錯記錄 */
+const logs = [];
+function log(msg) {
+  logs.unshift(new Date().toLocaleTimeString("zh-TW", { hour12: false }) + " " + msg);
+  if (logs.length > 12) logs.pop();
+  renderDebug();
+}
 
-function show(n, play) {
+/* 載入中提示（延遲 0.2 秒才顯示，避免快取時閃一下） */
+const pending = new Set(); let loadTimer = null;
+function syncLoading() {
+  if (pending.size) {
+    if (!loadTimer && $("loading").hidden) loadTimer = setTimeout(() => { loadTimer = null; if (pending.size) $("loading").hidden = false; }, 200);
+  } else { clearTimeout(loadTimer); loadTimer = null; $("loading").hidden = true; }
+}
+const begin = k => { pending.add(k); syncLoading(); };
+const end = k => { pending.delete(k); syncLoading(); };
+
+/* 錯誤提示與重試 */
+const errors = new Map();
+function renderErr() {
+  $("errBox").hidden = errors.size === 0;
+  $("errText").textContent = [...errors.values()].join("；");
+}
+function fail(k, msg) { errors.set(k, msg); end(k); renderErr(); log("錯誤：" + msg); }
+
+/* 音量（朗讀時降低背景音，結束或暫停就恢復）與靜音 */
+const speaking = () => !speech.paused && !speech.ended;
+function applyVolume() {
+  const d = speaking();
+  music.volume = d ? DUCK_VOLUME : MUSIC_VOLUME;
+  bgm.volume = d ? BGM_DUCK : BGM_VOLUME;
+  $("read").setAttribute("aria-pressed", String(d));
+  renderDebug();
+}
+function applyMute() {
+  for (const a of [speech, music, bgm]) a.muted = state.muted;
+  $("mute").textContent = state.muted ? "解除靜音" : "靜音";
+}
+
+function safePlay(a, key, msg) {
+  begin(key);
+  const p = a.play();
+  if (p) p.catch(e => {
+    if (e.name === "AbortError" || e.name === "NotSupportedError") return; // 前者是被切換打斷，後者由 error 事件處理
+    end(key);
+    if (e.name === "NotAllowedError") log("瀏覽器擋下播放，請再按一次");
+    else fail(key, msg);
+  });
+}
+const startMusic = () => { if (state.started && state.music) safePlay(music, "music", "無法播放背景音樂"); };
+function startReading() {
+  if (!state.started) return;
+  state.wantRead = true;
+  if (speech.ended) speech.currentTime = 0;
+  safePlay(speech, "speech", "無法播放語音檔");
+  log("開始朗讀");
+}
+function toggleRead() {
+  if (speaking()) { state.wantRead = false; speech.pause(); log("暫停朗讀"); }
+  else startReading();
+}
+
+/* 預載下一頁：圖片、音樂、朗讀 */
+const preloaded = new Set(), keep = [];
+function preload(n) {
+  if (n < FIRST || n > LAST || preloaded.has(n)) return;
+  preloaded.add(n);
+  const im = new Image(); im.src = url("img", n); keep.push(im);
+  for (const kind of ["speech", "music"]) { const a = new Audio(); a.preload = "auto"; a.src = url(kind, n); keep.push(a); }
+  while (keep.length > 9) keep.shift();
+  log(`預載第 ${n - FIRST + 1} 頁`);
+}
+
+/* 換頁：先停掉舊頁的聲音與計時器，再載入新頁 */
+function show(n, { read = false } = {}) {
+  clearTimeout(advanceTimer);
   state.i = Math.min(Math.max(n, FIRST), LAST);
   const i = state.i;
-  setErr("");
-  img.src = `assets/graphics/${i}.jpg`;
+  state.wantRead = read;
+  errors.clear(); renderErr();
+  pending.clear(); syncLoading();
+  speech.pause(); music.pause();
+  begin("img");
+  img.src = url("img", i);
   img.alt = `第 ${i - FIRST + 1} 頁`;
-  $("num").textContent = `${i - FIRST + 1} / ${LAST - FIRST + 1}`;
+  speech.src = url("speech", i);
+  music.src = url("music", i);
+  $("num").textContent = `${i - FIRST + 1} / ${TOTAL}`;
   $("prev").disabled = i === FIRST;
   $("next").disabled = i === LAST;
-
-  speech.pause(); speech.src = `assets/speech/speech${i}.mp3`;
-  music.pause();  music.src  = `assets/music/music${i}.mp3`;
-  $("read").classList.remove("playing");
-
-  // 預載下一頁
-  if (i < LAST) { new Image().src = `assets/graphics/${i + 1}.jpg`; }
-
-  if (play) playPage();
+  applyVolume();
+  preload(i + 1);
+  log(`第 ${i - FIRST + 1} 頁`);
+  if (state.started) { startMusic(); if (read) startReading(); }
 }
+const go = d => { const t = Math.min(Math.max(state.i + d, FIRST), LAST); if (t !== state.i) show(t); };
 
-function playPage() {
-  speech.currentTime = 0;
-  speech.play().then(() => $("read").classList.add("playing"))
-    .catch(() => setErr("無法播放朗讀，請檢查 assets/speech/ 裡的檔案"));
-  if (state.music) music.play().catch(() => {});
-}
+/* 媒體事件 */
+img.addEventListener("load", () => end("img"));
+img.addEventListener("error", () => fail("img", `找不到圖片 ${state.i}.jpg`));
 
-function stopPage() {
-  speech.pause(); music.pause();
-  $("read").classList.remove("playing");
-}
-
+speech.addEventListener("playing", () => { end("speech"); applyVolume(); });
+speech.addEventListener("waiting", () => begin("speech"));
+speech.addEventListener("play", applyVolume);
+speech.addEventListener("pause", () => { end("speech"); applyVolume(); });
+speech.addEventListener("emptied", applyVolume);
+speech.addEventListener("error", () => { fail("speech", `找不到語音檔 speech${state.i}.mp3`); applyVolume(); });
 speech.addEventListener("ended", () => {
-  $("read").classList.remove("playing");
-  if (state.auto && state.i < LAST) {
-    setTimeout(() => show(state.i + 1, true), 600);
-  } else {
-    music.pause();
-  }
+  end("speech"); applyVolume(); state.wantRead = false; log("朗讀結束");
+  if (state.auto && state.i < LAST) advanceTimer = setTimeout(() => show(state.i + 1, { read: true }), 700);
 });
-speech.addEventListener("error", () => setErr(`找不到 speech${state.i}.mp3`));
-img.addEventListener("error", () => setErr(`找不到 ${state.i}.jpg`));
 
-$("prev").onclick = () => show(state.i - 1, !speech.paused);
-$("next").onclick = () => show(state.i + 1, !speech.paused);
-$("read").onclick = () => speech.paused ? playPage() : stopPage();
+music.addEventListener("playing", () => end("music"));
+music.addEventListener("waiting", () => begin("music"));
+music.addEventListener("pause", () => end("music"));
+music.addEventListener("error", () => fail("music", `找不到背景音樂 music${state.i}.mp3`));
 
-$("autoChip").onclick = e => {
-  state.auto = !state.auto; e.currentTarget.setAttribute("aria-pressed", state.auto);
+bgm.addEventListener("playing", () => end("bgm"));
+bgm.addEventListener("pause", () => end("bgm"));
+bgm.addEventListener("error", () => fail("bgm", "找不到伴奏檔案"));
+
+/* 重試：只重新載入失敗的素材 */
+$("retry").onclick = () => {
+  state.nonce++;
+  const failed = [...errors.keys()];
+  errors.clear(); renderErr(); log("重試：" + failed.join(","));
+  for (const k of failed) {
+    if (k === "img") { begin("img"); img.src = url("img", state.i, true); }
+    if (k === "speech") { speech.src = url("speech", state.i, true); if (state.wantRead) startReading(); }
+    if (k === "music") { music.src = url("music", state.i, true); startMusic(); }
+    if (k === "bgm") { bgm.src = BGM_FILE + "?r=" + state.nonce; if (state.bgm) safePlay(bgm, "bgm", "無法播放伴奏"); }
+  }
 };
+
+/* 按鈕 */
+$("prev").onclick = () => go(-1);
+$("next").onclick = () => go(1);
+$("read").onclick = toggleRead;
+$("autoChip").onclick = e => { state.auto = !state.auto; e.currentTarget.setAttribute("aria-pressed", String(state.auto)); };
 $("musicChip").onclick = e => {
-  state.music = !state.music; e.currentTarget.setAttribute("aria-pressed", state.music);
-  if (!state.music) music.pause(); else if (!speech.paused) music.play().catch(() => {});
+  state.music = !state.music; e.currentTarget.setAttribute("aria-pressed", String(state.music));
+  if (state.music) startMusic(); else music.pause();
 };
 $("bgmChip").onclick = e => {
-  state.bgm = !state.bgm; e.currentTarget.setAttribute("aria-pressed", state.bgm);
-  if (state.bgm) bgm.play().catch(() => setErr("找不到伴奏檔案")); else bgm.pause();
+  state.bgm = !state.bgm; e.currentTarget.setAttribute("aria-pressed", String(state.bgm));
+  if (state.bgm) { if (!bgm.getAttribute("src")) bgm.src = BGM_FILE; safePlay(bgm, "bgm", "無法播放伴奏"); } else bgm.pause();
 };
+$("mute").onclick = () => { state.muted = !state.muted; applyMute(); log(state.muted ? "靜音" : "解除靜音"); };
+$("startBtn").onclick = () => { state.started = true; $("start").hidden = true; applyMute(); startMusic(); log("開始閱讀"); };
 
-$("startBtn").onclick = () => {
-  $("start").classList.add("hidden");
-  state.started = true;
-  show(FIRST, true);
-};
-
-// 鍵盤
+/* 鍵盤與手機滑動 */
 document.addEventListener("keydown", e => {
+  if ((e.key === "d" || e.key === "D") && !e.ctrlKey && !e.metaKey && !e.altKey) { toggleDebug(); return; }
   if (!state.started) return;
-  if (e.key === "ArrowLeft") show(state.i - 1, !speech.paused);
-  if (e.key === "ArrowRight") show(state.i + 1, !speech.paused);
-  if (e.key === " ") { e.preventDefault(); $("read").click(); }
+  if (e.key === "ArrowLeft") go(-1);
+  else if (e.key === "ArrowRight") go(1);
+  else if (e.code === "Space") { e.preventDefault(); if (!e.repeat) toggleRead(); }
 });
-
-// 手機左右滑動
+document.addEventListener("keyup", e => { if (e.code === "Space" && state.started) e.preventDefault(); });
 let sx = null;
 document.addEventListener("touchstart", e => { sx = e.touches[0].clientX; }, { passive: true });
 document.addEventListener("touchend", e => {
   if (sx === null || !state.started) return;
   const dx = e.changedTouches[0].clientX - sx; sx = null;
-  if (Math.abs(dx) > 60) show(state.i + (dx < 0 ? 1 : -1), !speech.paused);
+  if (Math.abs(dx) > 60) go(dx < 0 ? 1 : -1);
 });
 
-show(FIRST, false);
+/* 除錯面板（按「除錯」鈕或 D 鍵；網址加 ?debug 會直接開啟） */
+function toggleDebug(force) {
+  const d = $("debug");
+  d.hidden = force === undefined ? !d.hidden : !force;
+  $("debugBtn").setAttribute("aria-expanded", String(!d.hidden));
+  renderDebug();
+}
+function renderDebug() {
+  if ($("debug").hidden) return;
+  const f = a => (a.getAttribute("src") || "-").split("?")[0];
+  const dur = isFinite(speech.duration) ? speech.duration.toFixed(1) : "?";
+  $("debugOut").textContent = [
+    `頁碼：${state.i}（${state.i - FIRST + 1}/${TOTAL}）　靜音：${state.muted ? "是" : "否"}　自動翻頁：${state.auto ? "開" : "關"}`,
+    `語音：${f(speech)}｜${speaking() ? "播放中" : "停止"}｜${speech.currentTime.toFixed(1)}/${dur} 秒`,
+    `背景音樂：${f(music)}｜${music.paused ? "停止" : "播放中"}｜音量 ${music.volume}`,
+    `伴奏：${bgm.paused ? "停止" : "播放中"}｜音量 ${bgm.volume}`,
+    `載入中：${[...pending].join(",") || "無"}`,
+    `錯誤：${[...errors.values()].join("；") || "無"}`,
+    "--- 事件記錄 ---", ...logs
+  ].join("\n");
+}
+$("debugBtn").onclick = () => toggleDebug();
+$("dbgClose").onclick = () => toggleDebug(false);
+$("dbgEnd").onclick = () => { if (isFinite(speech.duration)) { speech.currentTime = Math.max(0, speech.duration - 1); log("語音跳到結尾前 1 秒"); } };
+$("dbgFail").onclick = () => { speech.src = "assets/speech/missing-test.mp3"; log("模擬語音檔失敗"); };
+setInterval(renderDebug, 500);
+
+/* 按鈕圖片缺檔時改顯示文字 */
+document.querySelectorAll(".btn img").forEach(im => {
+  const fix = () => { const b = im.parentElement; b.classList.add("fallback"); b.textContent = b.dataset.fallback; };
+  if (im.complete && im.naturalWidth === 0) fix(); else im.addEventListener("error", fix);
+});
+
+/* 小精靈（缺檔就不顯示） */
+if (SPIRIT_FILE) {
+  const s = $("spirit");
+  s.onload = () => { s.hidden = false; };
+  s.onerror = () => s.remove();
+  s.src = SPIRIT_FILE;
+}
+if (PORTFOLIO_URL) { $("portfolio").href = PORTFOLIO_URL; $("portfolio").hidden = false; }
+
+/* 啟動 */
+$("autoChip").setAttribute("aria-pressed", String(state.auto));
+applyMute();
+show(FIRST);
+if (/[?&]debug/.test(location.search)) toggleDebug(true);
 </script>
 </body>
 </html>
